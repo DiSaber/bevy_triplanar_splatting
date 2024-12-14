@@ -14,15 +14,14 @@
 #import bevy_pbr::mesh_functions as mesh_functions
 #import bevy_pbr::view_transformations as view_transformations
 
-#import trimap::biplanar::{calculate_biplanar_mapping, biplanar_texture_splatted}
-#import trimap::triplanar::{calculate_triplanar_mapping, triplanar_normal_to_world_splatted}
+#import trimap::biplanar::{calculate_biplanar_mapping, biplanar_texture}
+#import trimap::triplanar::{calculate_triplanar_mapping, triplanar_normal_to_world}
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) world_position: vec4<f32>,
     @location(1) world_normal: vec3<f32>,
-    @location(2) material_weights: vec4<f32>,
-    @location(3) @interpolate(flat) instance_index: u32,
+    @location(2) @interpolate(flat) instance_index: u32,
 };
 
 struct TriplanarMaterial {
@@ -39,23 +38,23 @@ struct TriplanarMaterial {
 @group(2) @binding(0)
 var<uniform> material: TriplanarMaterial;
 @group(2) @binding(1)
-var base_color_texture: texture_2d_array<f32>;
+var base_color_texture: texture_2d<f32>;
 @group(2) @binding(2)
 var base_color_sampler: sampler;
 @group(2) @binding(3)
-var emissive_texture: texture_2d_array<f32>;
+var emissive_texture: texture_2d<f32>;
 @group(2) @binding(4)
 var emissive_sampler: sampler;
 @group(2) @binding(5)
-var metallic_roughness_texture: texture_2d_array<f32>;
+var metallic_roughness_texture: texture_2d<f32>;
 @group(2) @binding(6)
 var metallic_roughness_sampler: sampler;
 @group(2) @binding(7)
-var occlusion_texture: texture_2d_array<f32>;
+var occlusion_texture: texture_2d<f32>;
 @group(2) @binding(8)
 var occlusion_sampler: sampler;
 @group(2) @binding(9)
-var normal_map_texture: texture_2d_array<f32>;
+var normal_map_texture: texture_2d<f32>;
 @group(2) @binding(10)
 var normal_map_sampler: sampler;
 
@@ -99,10 +98,9 @@ fn fragment(
     trimap.uv_z *= material.uv_scale;
 
     if ((material.flags & pbr_types::STANDARD_MATERIAL_FLAGS_BASE_COLOR_TEXTURE_BIT) != 0u) {
-        output_color *= biplanar_texture_splatted(
+        output_color *= biplanar_texture(
             base_color_texture,
             base_color_sampler,
-            in.material_weights,
             bimap
         );
     }
@@ -121,10 +119,9 @@ fn fragment(
         // TODO use .a for exposure compensation in HDR
         var emissive: vec4<f32> = material.emissive;
         if ((material.flags & pbr_types::STANDARD_MATERIAL_FLAGS_EMISSIVE_TEXTURE_BIT) != 0u) {
-            let biplanar_emissive = biplanar_texture_splatted(
+            let biplanar_emissive = biplanar_texture(
                 emissive_texture,
                 emissive_sampler,
-                in.material_weights,
                 bimap
             ).rgb;
             emissive = vec4<f32>(emissive.rgb * biplanar_emissive, 1.0);
@@ -134,10 +131,9 @@ fn fragment(
         var metallic: f32 = material.metallic;
         var perceptual_roughness: f32 = material.perceptual_roughness;
         if ((material.flags & pbr_types::STANDARD_MATERIAL_FLAGS_METALLIC_ROUGHNESS_TEXTURE_BIT) != 0u) {
-            let metallic_roughness = biplanar_texture_splatted(
+            let metallic_roughness = biplanar_texture(
                 metallic_roughness_texture,
                 metallic_roughness_sampler,
-                in.material_weights,
                 bimap
             );
             // Sampling from GLTF standard channels for now
@@ -150,10 +146,9 @@ fn fragment(
         // TODO: Split into diffuse/specular occlusion?
         var occlusion: vec3<f32> = vec3(1.0);
         if ((material.flags & pbr_types::STANDARD_MATERIAL_FLAGS_OCCLUSION_TEXTURE_BIT) != 0u) {
-            occlusion = vec3(biplanar_texture_splatted(
+            occlusion = vec3(biplanar_texture(
                 occlusion_texture,
                 occlusion_sampler,
-                in.material_weights,
                 bimap
             ).r);
         }
@@ -176,13 +171,12 @@ fn fragment(
         pbr_input.is_orthographic = is_orthographic;
 
 
-        pbr_input.N = triplanar_normal_to_world_splatted(
+        pbr_input.N = triplanar_normal_to_world(
             (material.flags & pbr_types::STANDARD_MATERIAL_FLAGS_TWO_COMPONENT_NORMAL_MAP) != 0u,
             (material.flags & pbr_types::STANDARD_MATERIAL_FLAGS_FLIP_NORMAL_MAP_Y) != 0u,
             normal_map_texture,
             normal_map_sampler,
             material.flags,
-            in.material_weights,
             in.world_normal,
             trimap,
         );

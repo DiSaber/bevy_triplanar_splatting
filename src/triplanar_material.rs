@@ -2,11 +2,11 @@ use bevy::{
     pbr::{MaterialPipeline, MaterialPipelineKey, StandardMaterialFlags},
     prelude::*,
     render::{
-        mesh::{MeshVertexAttribute, MeshVertexBufferLayoutRef},
+        mesh::MeshVertexBufferLayoutRef,
         render_asset::RenderAssets,
         render_resource::{
             AsBindGroup, AsBindGroupShaderType, Face, RenderPipelineDescriptor, ShaderRef,
-            ShaderType, SpecializedMeshPipelineError, TextureFormat, VertexFormat,
+            ShaderType, SpecializedMeshPipelineError, TextureFormat,
         },
         texture::GpuImage,
     },
@@ -29,13 +29,13 @@ use bevy::{
 pub struct TriplanarMaterial {
     pub base_color: Color,
 
-    #[texture(1, dimension = "2d_array")]
+    #[texture(1)]
     #[sampler(2)]
     pub base_color_texture: Option<Handle<Image>>,
 
     pub emissive: Color,
 
-    #[texture(3, dimension = "2d_array")]
+    #[texture(3)]
     #[sampler(4)]
     pub emissive_texture: Option<Handle<Image>>,
 
@@ -43,20 +43,20 @@ pub struct TriplanarMaterial {
 
     pub metallic: f32,
 
-    #[texture(5, dimension = "2d_array")]
+    #[texture(5)]
     #[sampler(6)]
     pub metallic_roughness_texture: Option<Handle<Image>>,
 
     #[doc(alias = "specular_intensity")]
     pub reflectance: f32,
 
-    #[texture(9, dimension = "2d_array")]
+    #[texture(9)]
     #[sampler(10)]
     pub normal_map_texture: Option<Handle<Image>>,
 
     pub flip_normal_map_y: bool,
 
-    #[texture(7, dimension = "2d_array")]
+    #[texture(7)]
     #[sampler(8)]
     pub occlusion_texture: Option<Handle<Image>>,
 
@@ -115,7 +115,6 @@ impl Material for TriplanarMaterial {
         let vertex_layout = layout.0.get_layout(&[
             Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
             Mesh::ATTRIBUTE_NORMAL.at_shader_location(1),
-            ATTRIBUTE_MATERIAL_WEIGHTS.at_shader_location(2),
         ])?;
         descriptor.vertex.buffers = vec![vertex_layout];
         if key.bind_group_data.normal_map {
@@ -139,9 +138,6 @@ impl Material for TriplanarMaterial {
         self.depth_bias
     }
 }
-
-pub const ATTRIBUTE_MATERIAL_WEIGHTS: MeshVertexAttribute =
-    MeshVertexAttribute::new("MaterialWeights", 582540667, VertexFormat::Uint32);
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct TriplanarMaterialKey {
