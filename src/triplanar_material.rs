@@ -1,12 +1,10 @@
 use bevy::{
-    pbr::{MaterialPipeline, MaterialPipelineKey, StandardMaterialFlags},
+    pbr::StandardMaterialFlags,
     prelude::*,
     render::{
-        mesh::MeshVertexBufferLayoutRef,
         render_asset::RenderAssets,
         render_resource::{
-            AsBindGroup, AsBindGroupShaderType, Face, RenderPipelineDescriptor, ShaderRef,
-            ShaderType, SpecializedMeshPipelineError, TextureFormat,
+            AsBindGroup, AsBindGroupShaderType, Face, ShaderRef, ShaderType, TextureFormat,
         },
         texture::GpuImage,
     },
@@ -99,34 +97,8 @@ impl Default for TriplanarMaterial {
 }
 
 impl Material for TriplanarMaterial {
-    fn vertex_shader() -> ShaderRef {
-        "embedded://bevy_triplanar_splatting/shaders/triplanar_material_vert.wgsl".into()
-    }
     fn fragment_shader() -> ShaderRef {
-        "embedded://bevy_triplanar_splatting/shaders/triplanar_material_frag.wgsl".into()
-    }
-
-    fn specialize(
-        _pipeline: &MaterialPipeline<Self>,
-        descriptor: &mut RenderPipelineDescriptor,
-        layout: &MeshVertexBufferLayoutRef,
-        key: MaterialPipelineKey<Self>,
-    ) -> Result<(), SpecializedMeshPipelineError> {
-        let vertex_layout = layout.0.get_layout(&[
-            Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
-            Mesh::ATTRIBUTE_NORMAL.at_shader_location(1),
-        ])?;
-        descriptor.vertex.buffers = vec![vertex_layout];
-        if key.bind_group_data.normal_map {
-            descriptor
-                .fragment
-                .as_mut()
-                .unwrap()
-                .shader_defs
-                .push("STANDARDMATERIAL_NORMAL_MAP".into());
-        }
-        descriptor.primitive.cull_mode = key.bind_group_data.cull_mode;
-        Ok(())
+        "embedded://bevy_triplanar_splatting/shaders/triplanar_material.wgsl".into()
     }
 
     fn alpha_mode(&self) -> AlphaMode {

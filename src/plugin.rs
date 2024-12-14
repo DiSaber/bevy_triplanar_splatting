@@ -23,7 +23,6 @@ impl Plugin for TriplanarMaterialPlugin {
             "shaders/biplanar.wgsl",
             Shader::from_wgsl
         );
-        embedded_asset!(app, "shaders/triplanar_material_vert.wgsl");
-        embedded_asset!(app, "shaders/triplanar_material_frag.wgsl");
+        embedded_asset!(app, "shaders/triplanar_material.wgsl");
     }
 }

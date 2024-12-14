@@ -1,6 +1,7 @@
 #import bevy_pbr::pbr_functions as pbr_functions
 #import bevy_pbr::pbr_types as pbr_types
 
+#import bevy_pbr::forward_io::VertexOutput
 #import bevy_pbr::mesh_bindings::mesh
 #import bevy_pbr::mesh_view_bindings::{view, fog, screen_space_ambient_occlusion_texture}
 #import bevy_pbr::mesh_view_types::{FOG_MODE_OFF}
@@ -8,7 +9,7 @@
 #import bevy_render::maths::powsafe;
 
 #ifdef SCREEN_SPACE_AMBIENT_OCCLUSION
-#import bevy_pbr::gtao_utils::gtao_multibounce
+#import bevy_pbr::ssao_utils::ssao_multibounce
 #endif
 
 #import bevy_pbr::mesh_functions as mesh_functions
@@ -16,13 +17,6 @@
 
 #import trimap::biplanar::{calculate_biplanar_mapping, biplanar_texture}
 #import trimap::triplanar::{calculate_triplanar_mapping, triplanar_normal_to_world}
-
-struct VertexOutput {
-    @builtin(position) clip_position: vec4<f32>,
-    @location(0) world_position: vec4<f32>,
-    @location(1) world_normal: vec3<f32>,
-    @location(2) @interpolate(flat) instance_index: u32,
-};
 
 struct TriplanarMaterial {
     base_color: vec4<f32>,
@@ -153,13 +147,13 @@ fn fragment(
             ).r);
         }
 #ifdef SCREEN_SPACE_AMBIENT_OCCLUSION
-        let ssao = textureLoad(screen_space_ambient_occlusion_texture, vec2<i32>(in.clip_position.xy), 0i).r;
-        let ssao_multibounce = gtao_multibounce(ssao, pbr_input.material.base_color.rgb);
+        let ssao = textureLoad(screen_space_ambient_occlusion_texture, vec2<i32>(in.position.xy), 0i).r;
+        let ssao_multibounce = ssao_multibounce(ssao, pbr_input.material.base_color.rgb);
         occlusion = min(occlusion, ssao_multibounce);
 #endif
         pbr_input.diffuse_occlusion = occlusion;
 
-        pbr_input.frag_coord = in.clip_position;
+        pbr_input.frag_coord = in.position;
         pbr_input.world_position = in.world_position;
 
         pbr_input.world_normal = pbr_functions::prepare_world_normal(
@@ -200,7 +194,7 @@ fn fragment(
 #ifdef DEBAND_DITHER
     var output_rgb = output_color.rgb;
     output_rgb = powsafe(output_rgb, 1.0 / 2.2);
-    output_rgb = output_rgb + screen_space_dither(in.clip_position.xy);
+    output_rgb = output_rgb + screen_space_dither(in.position.xy);
     // This conversion back to linear space is required because our output texture format is
     // SRGB; the GPU will assume our output is linear and will apply an SRGB conversion.
     output_rgb = powsafe(output_rgb, 2.2);
